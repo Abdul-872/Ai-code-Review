@@ -21,13 +21,44 @@ function App() {
 
   async function reviewCode() {
     try {
-      const response = await axios.post("http://localhost:3000/ai/get-review", {
+      // Set loading state
+      setReview("🔄 Reviewing your code...");
+      
+      // Determine API URL based on environment
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+      
+      const response = await axios.post(`${API_URL}/ai/get-review`, {
         code,
       });
-      setReview(response.data);
+      
+      // Handle the new API response format
+      if (response.data.success) {
+        setReview(response.data.review);
+      } else {
+        setReview(`❌ Error: ${response.data.error}`);
+      }
     } catch (error) {
       console.error("Error while reviewing code:", error);
-      setReview("❌ Failed to get review from server");
+      
+      let errorMessage = "❌ Failed to get review from server";
+      
+      if (error.response) {
+        // Server responded with error status
+        const errorData = error.response.data;
+        if (errorData && errorData.error) {
+          errorMessage = `❌ ${errorData.error}`;
+        } else {
+          errorMessage = `❌ Server error: ${error.response.status}`;
+        }
+      } else if (error.request) {
+        // Request was made but no response received
+        errorMessage = "❌ No response from server. Please check if the server is running.";
+      } else {
+        // Something else happened
+        errorMessage = `❌ Request error: ${error.message}`;
+      }
+      
+      setReview(errorMessage);
     }
   }
 
